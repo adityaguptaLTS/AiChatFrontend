@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Copy, Check, RotateCw, AlertTriangle, Bot, User, Sparkles } from 'lucide-react';
+import { Copy, Check, RotateCw, AlertTriangle, Bot, User, Sparkles, Paperclip } from 'lucide-react';
 import CodeBlock from './CodeBlock.jsx';
 import { copyTextToClipboard, formatTimestamp } from '../utils/chatHelpers.js';
 
@@ -62,7 +62,19 @@ export default function MessageBubble({
 
           <div className={`message-bubble ${isUser ? 'user-bubble' : 'assistant-bubble'}`}>
             {isUser ? (
-              <div className="user-text-content">{message.content}</div>
+              <div className="user-text-content">
+                {message.attachments && message.attachments.length > 0 && (
+                  <div className="msg-attachments-container">
+                    {message.attachments.map((file, i) => (
+                      <div key={i} className="msg-attachment-badge">
+                        <Paperclip size={12} className="msg-attachment-icon" />
+                        <span className="msg-attachment-name">{file.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="user-text">{message.content}</div>
+              </div>
             ) : isError ? (
               <div className="error-message-content">
                 <div className="error-text">{message.content}</div>

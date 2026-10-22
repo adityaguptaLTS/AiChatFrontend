@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import TopHeader from './components/TopHeader.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import ChatWindow from './components/ChatWindow.jsx';
 import SettingsModal from './components/SettingsModal.jsx';
@@ -97,46 +98,49 @@ export default function App() {
   };
 
   return (
-    <div className="app-layout">
-      <Sidebar
-        conversations={conversations}
-        activeChatId={activeChatId}
-        onSelectChat={handleSelectChat}
-        onNewChat={handleNewChat}
-        onRenameChat={renameConversation}
-        onDeleteChat={deleteConversation}
-        onClearAllChats={clearAllConversations}
-        isOpen={isSidebarOpen}
-        onToggleSidebar={toggleSidebar}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        isDemoMode={engineConfig.isDemoMode}
-      />
+    <div className="app-shell">
+      <TopHeader />
+      <div className="app-layout">
+        <Sidebar
+          conversations={conversations}
+          activeChatId={activeChatId}
+          onSelectChat={handleSelectChat}
+          onNewChat={handleNewChat}
+          onRenameChat={renameConversation}
+          onDeleteChat={deleteConversation}
+          onClearAllChats={clearAllConversations}
+          isOpen={isSidebarOpen}
+          onToggleSidebar={toggleSidebar}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          isDemoMode={engineConfig.isDemoMode}
+        />
 
-      <ChatWindow
-        activeConversation={activeConversation}
-        isLoading={isLoading}
-        streamingContent={streamingContent}
-        error={error}
-        engineConfig={engineConfig}
-        isSidebarOpen={isSidebarOpen}
-        onToggleSidebar={toggleSidebar}
-        onSendMessage={sendMessage}
-        onStopGeneration={stopGeneration}
-        onRegenerate={regenerateLastResponse}
-        onRetry={retryLastMessage}
-        onClearCurrentChat={clearCurrentChat}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-      />
+        <ChatWindow
+          activeConversation={activeConversation}
+          isLoading={isLoading}
+          streamingContent={streamingContent}
+          error={error}
+          engineConfig={engineConfig}
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={toggleSidebar}
+          onSendMessage={sendMessage}
+          onStopGeneration={stopGeneration}
+          onRegenerate={regenerateLastResponse}
+          onRetry={retryLastMessage}
+          onClearCurrentChat={clearCurrentChat}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+        />
 
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        settings={engineSettings}
-        onUpdateSettings={updateEngineSettings}
-        engineConfig={engineConfig}
-      />
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          settings={engineSettings}
+          onUpdateSettings={updateEngineSettings}
+          engineConfig={engineConfig}
+        />
+      </div>
     </div>
   );
 }

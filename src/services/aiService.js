@@ -24,9 +24,9 @@ const ENV_FORCE_DEMO = import.meta.env.VITE_ENABLE_DEMO_MODE === 'true';
  * Returns the effective configuration, factoring in optional runtime overrides.
  */
 export function getEngineConfig(runtimeOverrides = {}) {
-  const baseUrl = (runtimeOverrides.customEndpoint ?? ENV_BASE_URL).trim();
-  const modelName = (runtimeOverrides.customModel ?? ENV_MODEL_NAME).trim();
-  const forceDemo = runtimeOverrides.useDemoMode ?? (ENV_FORCE_DEMO || !baseUrl);
+  const baseUrl = (runtimeOverrides.customEndpoint?.trim() || ENV_BASE_URL).trim();
+  const modelName = (runtimeOverrides.customModel?.trim() || ENV_MODEL_NAME).trim();
+  const forceDemo = runtimeOverrides.useDemoMode === true || (ENV_FORCE_DEMO && runtimeOverrides.useDemoMode !== false);
 
   return {
     baseUrl,
@@ -74,6 +74,9 @@ export function mapResponsePayload(data) {
   // Case 1: OpenAI-compatible format { choices: [{ message: { content } }] }
   if (data.choices?.[0]?.message?.content) {
     return data.choices[0].message.content;
+  }
+  if (data.choices?.[0]?.message?.reasoning) {
+    return data.choices[0].message.reasoning;
   }
 
   // Case 2: Ollama / generic format { response: string } or { message: { content } }
@@ -341,7 +344,7 @@ async function sendToRealEngine({ messages, signal, onChunk, config }) {
             try {
               const parsed = JSON.parse(dataStr);
               // Extract delta chunk
-              const delta = parsed.choices?.[0]?.delta?.content || parsed.response || parsed.message?.content || '';
+              const delta = parsed.choices?.[0]?.delta?.content ?? (parsed.choices?.[0]?.delta?.reasoning || parsed.response || parsed.message?.content || '');
               if (delta) {
                 accumulated += delta;
                 onChunk(accumulated);

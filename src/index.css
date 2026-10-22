@@ -129,10 +129,156 @@ input, textarea, select {
   background: var(--scrollbar-thumb-hover);
 }
 
-/* App Layout Grid */
+/* ==============================================================================
+   APP SHELL & TOP HEADER BAND
+   ============================================================================== */
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: var(--bg-app);
+}
+
+.top-header-band {
+  height: 52px;
+  background-color: var(--bg-sidebar);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  flex-shrink: 0;
+  z-index: 50;
+  user-select: none;
+}
+
+.top-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.top-header-logo-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.top-header-logo {
+  height: 28px;
+  width: auto;
+  max-width: 130px;
+  object-fit: contain;
+  display: block;
+}
+
+.top-header-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.top-header-app-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.top-header-app-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background-color: var(--accent-subtle);
+  color: var(--accent-text);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.top-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.top-header-user-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 6px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  transition: background-color var(--transition-fast);
+}
+
+.user-avatar-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #818cf8);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-details-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.user-display-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.user-role-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--success);
+  background-color: rgba(16, 185, 129, 0.1);
+  padding: 1px 5px;
+  border-radius: var(--radius-pill);
+}
+
+.top-header-guest-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.guest-icon {
+  color: var(--text-muted);
+}
+
+.guest-label {
+  font-weight: 500;
+}
+
+/* App Layout (below Top Header Band) */
 .app-layout {
   display: flex;
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
   width: 100vw;
   overflow: hidden;
   position: relative;
@@ -1311,6 +1457,136 @@ input, textarea, select {
 
 .stop-btn:hover {
   opacity: 0.9;
+}
+
+/* Attachment Button & Selected Files Strip */
+.attach-btn {
+  color: var(--text-secondary);
+}
+
+.attach-btn:hover:not(:disabled) {
+  background-color: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.composer-attachments-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px 10px 4px;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.attachment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  font-size: 0.76rem;
+  color: var(--text-primary);
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+  animation: fadeIn 120ms ease-out;
+}
+
+.attachment-type-icon {
+  color: var(--accent-text);
+  flex-shrink: 0;
+}
+
+.attachment-meta {
+  display: flex;
+  flex-direction: column;
+  max-width: 160px;
+}
+
+.attachment-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.attachment-size {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+}
+
+.attachment-remove-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+  margin-left: 2px;
+}
+
+.attachment-remove-btn:hover {
+  background-color: var(--bg-surface-hover);
+  color: var(--danger);
+}
+
+.composer-validation-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  margin-bottom: 8px;
+  background-color: var(--danger-subtle);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  color: var(--danger);
+  animation: fadeIn 120ms ease-out;
+}
+
+.validation-error-icon {
+  flex-shrink: 0;
+}
+
+.validation-error-close {
+  margin-left: auto;
+  color: var(--danger);
+  padding: 2px;
+}
+
+/* User Message Attachment Badges */
+.msg-attachments-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.msg-attachment-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  color: var(--text-primary);
+}
+
+[data-theme='light'] .msg-attachment-badge {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.msg-attachment-icon {
+  color: var(--accent-text);
+}
+
+.msg-attachment-name {
+  font-weight: 500;
 }
 
 .composer-disclaimer {

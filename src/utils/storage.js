@@ -69,6 +69,7 @@ export function loadConversations() {
       timestamp: msg.timestamp || new Date().toISOString(),
       isError: Boolean(msg.isError),
       isDemo: Boolean(msg.isDemo),
+      attachments: Array.isArray(msg.attachments) ? msg.attachments : [],
     })) : [],
   }));
 }

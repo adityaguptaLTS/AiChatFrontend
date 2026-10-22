@@ -265,11 +265,47 @@ export function useChat() {
   }, [engineSettings]);
 
   /**
-   * Submits a user prompt to the active conversation (or creates one if none exists).
+   * Submits a user prompt and optional file attachments to the active conversation.
    */
-  const sendMessage = useCallback(async (promptText) => {
-    if (!promptText || !promptText.trim() || isLoading) return;
-    const trimmed = promptText.trim();
+  const sendMessage = useCallback(async (promptText = '', attachedFiles = []) => {
+    const hasPrompt = Boolean(promptText && promptText.trim());
+    const hasFiles = Array.isArray(attachedFiles) && attachedFiles.length > 0;
+    if ((!hasPrompt && !hasFiles) || isLoading) return;
+
+    const trimmed = hasPrompt ? promptText.trim() : 'Please review the attached file(s).';
+
+    // Process attached files
+    const attachmentMeta = [];
+    let fileContextText = '';
+
+    if (hasFiles) {
+      for (const file of attachedFiles) {
+        attachmentMeta.push({
+          name: file.name,
+          size: file.size,
+          type: file.type || 'application/octet-stream',
+        });
+
+        // Check if text-based file to extract readable content
+        const isTextBased =
+          (file.type && file.type.startsWith('text/')) ||
+          /\.(txt|md|json|csv|js|jsx|ts|tsx|py|html|css|xml|yaml|yml|sql|sh|env)$/i.test(file.name);
+
+        if (isTextBased && typeof file.text === 'function') {
+          try {
+            const textContent = await file.text();
+            const truncatedContent = textContent.length > 50000 ? textContent.slice(0, 50000) + '\n...[truncated]' : textContent;
+            fileContextText += `\n\n--- Attached File: ${file.name} ---\n\`\`\`\n${truncatedContent}\n\`\`\`\n`;
+          } catch (readErr) {
+            console.warn(`Could not read text of ${file.name}:`, readErr);
+            fileContextText += `\n\n[Attached File: ${file.name} (${(file.size / 1024).toFixed(1)} KB)]`;
+          }
+        } else {
+          // Binary or non-text document
+          fileContextText += `\n\n[Attached File: ${file.name} (${(file.size / 1024).toFixed(1)} KB) — Binary document; text extraction requires server-side document OCR pipeline]`;
+        }
+      }
+    }
 
     let targetChatId = activeChatId;
     let currentConv = conversations.find(c => c.id === targetChatId);
@@ -290,14 +326,16 @@ export function useChat() {
       currentConv = newChat;
     }
 
+    const fullEngineContent = fileContextText ? `${trimmed}${fileContextText}` : trimmed;
+
     const userMessage = {
       id: generateId(),
       role: 'user',
       content: trimmed,
+      attachments: attachmentMeta,
       timestamp: new Date().toISOString(),
     };
 
-    // Update conversation title from first message if currently untitled/default
     const isFirstMessage = currentConv.messages.length === 0;
     const newTitle = isFirstMessage ? generateTitleFromPrompt(trimmed) : currentConv.title;
 
@@ -316,8 +354,12 @@ export function useChat() {
       return c;
     }));
 
+    // Build message list to send to engine (including attachment text context)
+    const historyForEngine = currentConv.messages.map(m => ({ role: m.role, content: m.content }));
+    historyForEngine.push({ role: 'user', content: fullEngineContent });
+
     // Trigger AI response
-    await executeAiRequest(targetChatId, updatedMessages);
+    await executeAiRequest(targetChatId, historyForEngine);
   }, [activeChatId, conversations, isLoading, executeAiRequest]);
 
   /**
