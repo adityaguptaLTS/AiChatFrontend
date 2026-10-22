@@ -78,7 +78,7 @@ export default function ChatWindow({
 
           <div className="chat-header-info">
             <h2 className="chat-header-title">
-              {activeConversation ? activeConversation.title : 'Local AI Assistant'}
+              {activeConversation ? activeConversation.title : 'ACME AI Assistant'}
             </h2>
             <div className="chat-header-submeta">
               {isDemo ? (

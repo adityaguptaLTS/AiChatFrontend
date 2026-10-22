@@ -1,4 +1,4 @@
-# Local AI Assistant — Frontend (ChatGPT & Claude Style)
+# ACME AI Assistant — Frontend (ChatGPT & Claude Style)
 
 A high-performance, standalone conversational AI chat interface built with **React 19** and **Vite**, engineered specifically for on-premise, locally hosted AI machine engines. 
 

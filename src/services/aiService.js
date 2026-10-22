@@ -214,7 +214,7 @@ Compare snapshots using the **Objects allocated between Snapshot 1 and 2** view.
   }
 ];
 
-const DEFAULT_DEMO_REPLY = `I am running in **Demo Mode** simulating the local AI assistant.
+const DEFAULT_DEMO_REPLY = `I am running in **Demo Mode** simulating the ACME AI assistant.
 
 You can ask me questions about:
 - Writing and reviewing code

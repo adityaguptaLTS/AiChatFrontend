@@ -106,7 +106,7 @@ export default function Sidebar({
               <Sparkles size={18} className="brand-icon" />
             </div>
             <div className="brand-text">
-              <span className="brand-name">Local AI Assistant</span>
+              <span className="brand-name">ACME AI Assistant</span>
               <span className="brand-status">
                 {isDemoMode ? 'Demo Mode' : 'Engine Ready'}
               </span>

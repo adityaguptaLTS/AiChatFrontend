@@ -37,7 +37,7 @@ export default function WelcomeScreen({ onSelectPrompt, isDemoMode = true }) {
       <div className="welcome-hero">
         <div className="welcome-badge">
           <Sparkles size={14} className="sparkle-icon" />
-          <span>Local AI Machine Engine</span>
+          <span>ACME AI Machine Engine</span>
         </div>
         <h1 className="welcome-title">How can I help you today?</h1>
         <p className="welcome-subtitle">

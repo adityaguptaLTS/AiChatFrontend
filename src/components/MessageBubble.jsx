@@ -43,7 +43,7 @@ export default function MessageBubble({
         <div className="message-content-wrapper">
           <div className="message-header-meta">
             <span className="message-sender-name">
-              {isUser ? 'You' : 'Local AI Assistant'}
+              {isUser ? 'You' : 'ACME AI Assistant'}
             </span>
 
             {isDemo && !isUser && (

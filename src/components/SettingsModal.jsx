@@ -58,7 +58,7 @@ export default function SettingsModal({
         <div className="modal-header">
           <div className="modal-header-title">
             <Server size={18} className="modal-icon" />
-            <h2 id="settings-title">Local AI Engine Settings</h2>
+            <h2 id="settings-title">ACME AI Engine Settings</h2>
           </div>
           <button
             type="button"
