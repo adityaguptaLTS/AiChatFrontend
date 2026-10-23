@@ -132,12 +132,12 @@ export default function LoginPage({ theme, onToggleTheme }) {
           </div>
 
           {/* Demonstration Notice Banner */}
-          <div className="login-demo-notice" role="note" aria-label="Demo Authentication Notice">
+          {/* <div className="login-demo-notice" role="note" aria-label="Demo Authentication Notice">
             <ShieldAlert size={16} className="login-notice-icon" aria-hidden="true" />
             <div className="login-notice-text">
               <strong>Frontend Demo Mode:</strong> Enter any valid email format and non-empty password to proceed. No passwords or credentials are saved.
             </div>
-          </div>
+          </div> */}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="login-form" noValidate>
