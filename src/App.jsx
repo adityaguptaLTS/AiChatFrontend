@@ -1,43 +1,38 @@
 import { useState, useEffect } from 'react';
-import TopHeader from './components/TopHeader.jsx';
-import Sidebar from './components/Sidebar.jsx';
-import ChatWindow from './components/ChatWindow.jsx';
-import SettingsModal from './components/SettingsModal.jsx';
-import { useChat } from './hooks/useChat.js';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import LoginPage from './pages/LoginPage.jsx';
+import ChatPage from './pages/ChatPage.jsx';
+import { useAuthSession } from './utils/auth.js';
 import { loadTheme, saveTheme } from './utils/storage.js';
+
+/**
+ * Lightweight Demo Navigation Guard:
+ * Restricts access to the chat page unless a valid session exists.
+ * NOTE: This is a frontend-only demonstration guard and does not replace server-side auth.
+ */
+function ProtectedRoute({ children }) {
+  const user = useAuthSession();
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
+
+/**
+ * Public Route Guard:
+ * If the user already has an active session, redirects directly to /chat.
+ */
+function PublicRoute({ children }) {
+  const user = useAuthSession();
+  if (user) {
+    return <Navigate to="/chat" replace />;
+  }
+  return children;
+}
 
 export default function App() {
   const [theme, setTheme] = useState(() => loadTheme());
-  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
-    // Desktop default open, mobile default closed
-    if (typeof window !== 'undefined') {
-      return window.innerWidth >= 768;
-    }
-    return true;
-  });
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
-  const {
-    conversations,
-    activeChatId,
-    activeConversation,
-    isLoading,
-    streamingContent,
-    error,
-    engineConfig,
-    engineSettings,
-    updateEngineSettings,
-    createNewChat,
-    selectConversation,
-    renameConversation,
-    deleteConversation,
-    clearAllConversations,
-    clearCurrentChat,
-    sendMessage,
-    stopGeneration,
-    regenerateLastResponse,
-    retryLastMessage,
-  } = useChat();
+  const user = useAuthSession();
 
   // Apply theme to HTML root element
   useEffect(() => {
@@ -45,102 +40,47 @@ export default function App() {
     saveTheme(theme);
   }, [theme]);
 
-  // Handle responsive resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768 && isSidebarOpen) {
-        // Automatically close on mobile resize
-        setIsSidebarOpen(false);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [isSidebarOpen]);
-
-  // Global keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      // Ctrl+Shift+O or Ctrl+K for New Chat
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
-        e.preventDefault();
-        createNewChat();
-      }
-      // Escape closes settings modal
-      if (e.key === 'Escape' && isSettingsOpen) {
-        setIsSettingsOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [createNewChat, isSettingsOpen]);
-
   const toggleTheme = () => {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(prev => !prev);
-  };
-
-  const handleSelectChat = (chatId) => {
-    selectConversation(chatId);
-    // On small screens, close sidebar when selecting a chat
-    if (window.innerWidth < 768) {
-      setIsSidebarOpen(false);
-    }
-  };
-
-  const handleNewChat = () => {
-    createNewChat();
-    if (window.innerWidth < 768) {
-      setIsSidebarOpen(false);
-    }
-  };
-
   return (
-    <div className="app-shell">
-      <TopHeader />
-      <div className="app-layout">
-        <Sidebar
-          conversations={conversations}
-          activeChatId={activeChatId}
-          onSelectChat={handleSelectChat}
-          onNewChat={handleNewChat}
-          onRenameChat={renameConversation}
-          onDeleteChat={deleteConversation}
-          onClearAllChats={clearAllConversations}
-          isOpen={isSidebarOpen}
-          onToggleSidebar={toggleSidebar}
-          theme={theme}
-          onToggleTheme={toggleTheme}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-          isDemoMode={engineConfig.isDemoMode}
+    <BrowserRouter>
+      <Routes>
+        {/* Login Route (Public) */}
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <LoginPage theme={theme} onToggleTheme={toggleTheme} />
+            </PublicRoute>
+          }
         />
 
-        <ChatWindow
-          activeConversation={activeConversation}
-          isLoading={isLoading}
-          streamingContent={streamingContent}
-          error={error}
-          engineConfig={engineConfig}
-          isSidebarOpen={isSidebarOpen}
-          onToggleSidebar={toggleSidebar}
-          onSendMessage={sendMessage}
-          onStopGeneration={stopGeneration}
-          onRegenerate={regenerateLastResponse}
-          onRetry={retryLastMessage}
-          onClearCurrentChat={clearCurrentChat}
-          onOpenSettings={() => setIsSettingsOpen(true)}
+        {/* Dedicated Chat Route (Protected by Demo Guard) */}
+        <Route
+          path="/chat"
+          element={
+            <ProtectedRoute>
+              <ChatPage theme={theme} onToggleTheme={toggleTheme} />
+            </ProtectedRoute>
+          }
         />
 
-        <SettingsModal
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          settings={engineSettings}
-          onUpdateSettings={updateEngineSettings}
-          engineConfig={engineConfig}
+        {/* Root Route: Initial entry point */}
+        <Route
+          path="/"
+          element={
+            user ? <Navigate to="/chat" replace /> : <Navigate to="/login" replace />
+          }
         />
-      </div>
-    </div>
+
+        {/* Catch-all Fallback */}
+        <Route
+          path="*"
+          element={<Navigate to={user ? "/chat" : "/login"} replace />}
+        />
+      </Routes>
+    </BrowserRouter>
   );
 }

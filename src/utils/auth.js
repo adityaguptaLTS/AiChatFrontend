@@ -14,6 +14,7 @@ const STORAGE_AUTH_KEYS = {
   EMAIL: 'email',
   AUTH_TOKEN: 'authToken',
   USER_ID: 'userId',
+  DEMO_SESSION: 'acme_demo_session',
 };
 
 /**
@@ -48,6 +49,26 @@ export function getAuthenticatedUser() {
   }
 
   try {
+    // 0. Check temporary demo login session (frontend-only)
+    const rawDemo = localStorage.getItem(STORAGE_AUTH_KEYS.DEMO_SESSION);
+    if (rawDemo && rawDemo !== 'undefined' && rawDemo !== 'null') {
+      try {
+        const parsed = JSON.parse(rawDemo);
+        if (parsed && parsed.email) {
+          return {
+            name: parsed.name || parsed.email.split('@')[0],
+            email: parsed.email,
+            role: parsed.role || 'Staff Member',
+            userId: parsed.userId || 'demo-user',
+            isAuthenticated: true,
+            isDemoSession: true,
+          };
+        }
+      } catch {
+        // Not valid JSON
+      }
+    }
+
     // 1. Check existing 'user' object stored by ACME chat application
     const rawUser = localStorage.getItem(STORAGE_AUTH_KEYS.USER);
     if (rawUser && rawUser !== 'undefined' && rawUser !== 'null') {
@@ -149,4 +170,69 @@ export function useAuthSession() {
   }, []);
 
   return user;
+}
+
+/**
+ * Sets a temporary, frontend-only demo session for the given email.
+ * 
+ * IMPORTANT SECURITY NOTICE:
+ * - This is a temporary frontend-only demonstration.
+ * - Absolutely NO passwords or credentials are saved, logged, or persisted.
+ * - This must be replaced with real backend authentication (JWT/OAuth) before production.
+ */
+export function setDemoAuthSession({ email }) {
+  if (typeof window === 'undefined' || !window.localStorage) return null;
+  
+  const cleanEmail = (email || '').trim().toLowerCase();
+  const usernamePart = cleanEmail.split('@')[0].replace(/[._+-]/g, ' ');
+  const formattedName = usernamePart
+    .split(' ')
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ') || 'Staff Member';
+
+  const sessionData = {
+    name: formattedName,
+    email: cleanEmail,
+    role: 'Staff Member',
+    userId: 'demo-' + Date.now(),
+    isAuthenticated: true,
+    isDemoSession: true,
+    loginTimestamp: new Date().toISOString(),
+  };
+
+  try {
+    localStorage.setItem(STORAGE_AUTH_KEYS.DEMO_SESSION, JSON.stringify(sessionData));
+    // Dispatch storage event so all tabs and listeners update in real time
+    window.dispatchEvent(new Event('storage'));
+  } catch (err) {
+    console.warn('[auth] Failed to persist demo session:', err);
+  }
+
+  return sessionData;
+}
+
+/**
+ * Clears the active session and logs out the user
+ */
+export function clearAuthSession() {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    localStorage.removeItem(STORAGE_AUTH_KEYS.DEMO_SESSION);
+    localStorage.removeItem(STORAGE_AUTH_KEYS.USER);
+    localStorage.removeItem(STORAGE_AUTH_KEYS.USER_NAME);
+    localStorage.removeItem(STORAGE_AUTH_KEYS.AUTH_TOKEN);
+    localStorage.removeItem(STORAGE_AUTH_KEYS.EMAIL);
+    localStorage.removeItem(STORAGE_AUTH_KEYS.USER_ID);
+    window.dispatchEvent(new Event('storage'));
+  } catch (err) {
+    console.warn('[auth] Failed to clear session:', err);
+  }
+}
+
+/**
+ * Checks if a session is currently active
+ */
+export function isUserAuthenticated() {
+  return Boolean(getAuthenticatedUser());
 }
