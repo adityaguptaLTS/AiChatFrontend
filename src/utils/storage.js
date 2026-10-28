@@ -11,6 +11,7 @@ const STORAGE_KEYS = {
   ACTIVE_CHAT_ID: 'local_ai_active_chat_id_v1',
   THEME: 'local_ai_theme_v1',
   ENGINE_SETTINGS: 'local_ai_engine_settings_v1',
+  LANGUAGE: 'acme-ai-language',
 };
 
 /**
@@ -150,4 +151,44 @@ export function loadEngineSettings() {
  */
 export function saveEngineSettings(settings) {
   safeSet(STORAGE_KEYS.ENGINE_SETTINGS, settings);
+}
+
+/**
+ * Loads user language preference (defaults to 'en').
+ * Restores saved language across page reloads and browser sessions.
+ */
+export function loadLanguage() {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) {
+      return 'en';
+    }
+    const raw = window.localStorage.getItem(STORAGE_KEYS.LANGUAGE);
+    if (!raw) return 'en';
+    let parsed = raw;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      parsed = raw;
+    }
+    const supported = ['en', 'hi', 'es', 'fr', 'de', 'ja'];
+    return supported.includes(parsed) ? parsed : 'en';
+  } catch (err) {
+    console.warn('[storage] Failed reading language preference:', err);
+    return 'en';
+  }
+}
+
+/**
+ * Saves user language preference to localStorage under dedicated key 'acme-ai-language'
+ */
+export function saveLanguage(language) {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    const supported = ['en', 'hi', 'es', 'fr', 'de', 'ja'];
+    if (supported.includes(language)) {
+      window.localStorage.setItem(STORAGE_KEYS.LANGUAGE, JSON.stringify(language));
+    }
+  } catch (err) {
+    console.error('[storage] Failed writing language preference:', err);
+  }
 }

@@ -126,6 +126,8 @@ export default function ChatPage({ theme, onToggleTheme }) {
           settings={engineSettings}
           onUpdateSettings={updateEngineSettings}
           engineConfig={engineConfig}
+          theme={theme}
+          onToggleTheme={onToggleTheme}
         />
       </div>
     </div>

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Copy, Check, RotateCw, AlertTriangle, Bot, User, Sparkles, Paperclip } from 'lucide-react';
+import { Copy, Check, RotateCw, AlertTriangle, User, Paperclip } from 'lucide-react';
 import CodeBlock from './CodeBlock.jsx';
+import acmeLogo from '../assets/ACME-Logo-SVG.png';
 import { copyTextToClipboard, formatTimestamp } from '../utils/chatHelpers.js';
 
 export default function MessageBubble({
@@ -15,7 +16,6 @@ export default function MessageBubble({
   const [copied, setCopied] = useState(false);
   const isUser = message.role === 'user';
   const isError = Boolean(message.isError);
-  const isDemo = Boolean(message.isDemo);
 
   const handleCopyResponse = async () => {
     const success = await copyTextToClipboard(message.content);
@@ -35,7 +35,7 @@ export default function MessageBubble({
           ) : isError ? (
             <AlertTriangle size={18} className="icon-error" />
           ) : (
-            <Bot size={18} />
+            <img src={acmeLogo} alt="ACME AI" className="bot-avatar-logo" />
           )}
         </div>
 
@@ -45,13 +45,6 @@ export default function MessageBubble({
             <span className="message-sender-name">
               {isUser ? 'You' : 'ACME AI Assistant'}
             </span>
-
-            {isDemo && !isUser && (
-              <span className="demo-pill" title="This response was simulated locally in demo mode">
-                <Sparkles size={11} />
-                <span>Demo Mode</span>
-              </span>
-            )}
 
             {message.timestamp && (
               <span className="message-timestamp">

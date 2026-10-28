@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { ArrowUp, Square, Paperclip, X, FileText, Image, FileCode, AlertCircle } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext.jsx';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const MAX_FILES = 5;
@@ -26,8 +27,10 @@ export default function ChatInput({
   onSendMessage,
   onStopGeneration,
   isLoading = false,
-  placeholder = 'Ask anything or paste code...',
+  placeholder,
 }) {
+  const { t } = useLanguage();
+  const effectivePlaceholder = placeholder || t('askPlaceholder');
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState([]);
   const [validationError, setValidationError] = useState('');
@@ -188,7 +191,7 @@ export default function ChatInput({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={attachments.length > 0 ? 'Add instructions for attached file(s)...' : placeholder}
+          placeholder={attachments.length > 0 ? 'Add instructions for attached file(s)...' : effectivePlaceholder}
           rows={1}
           disabled={isLoading}
           className="composer-textarea"

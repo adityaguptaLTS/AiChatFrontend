@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import {
   PanelLeft,
-  Sparkles,
   Sliders,
   RotateCcw,
-  ArrowDown,
-  Server
+  ArrowDown
 } from 'lucide-react';
+import acmeLogo from '../assets/ACME-Logo-SVG.png';
 import WelcomeScreen from './WelcomeScreen.jsx';
 import MessageBubble from './MessageBubble.jsx';
 import ChatInput from './ChatInput.jsx';
 import LoadingIndicator from './LoadingIndicator.jsx';
+import { useLanguage } from '../context/LanguageContext.jsx';
 
 export default function ChatWindow({
   activeConversation,
@@ -26,6 +26,7 @@ export default function ChatWindow({
   onClearCurrentChat,
   onOpenSettings,
 }) {
+  const { t } = useLanguage();
   const messagesEndRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
@@ -69,8 +70,8 @@ export default function ChatWindow({
               type="button"
               className="header-icon-btn sidebar-open-btn"
               onClick={onToggleSidebar}
-              aria-label="Open sidebar"
-              title="Open sidebar"
+              aria-label={t('openSidebar')}
+              title={t('openSidebar')}
             >
               <PanelLeft size={18} />
             </button>
@@ -80,19 +81,6 @@ export default function ChatWindow({
             <h2 className="chat-header-title">
               {activeConversation ? activeConversation.title : 'ACME AI Assistant'}
             </h2>
-            <div className="chat-header-submeta">
-              {isDemo ? (
-                <span className="status-chip demo" title="Running in simulated demo mode">
-                  <Sparkles size={11} />
-                  <span>Demo Mode</span>
-                </span>
-              ) : (
-                <span className="status-chip live" title={`Connected to ${engineConfig.baseUrl}`}>
-                  <Server size={11} />
-                  <span>Local Engine ({engineConfig.modelName})</span>
-                </span>
-              )}
-            </div>
           </div>
         </div>
 
@@ -103,11 +91,11 @@ export default function ChatWindow({
               className="header-action-btn"
               onClick={onClearCurrentChat}
               disabled={isLoading}
-              title="Clear this conversation"
-              aria-label="Clear this conversation"
+              title={t('clearChat')}
+              aria-label={t('clearChat')}
             >
               <RotateCcw size={15} />
-              <span className="btn-text">Clear Chat</span>
+              <span className="btn-text">{t('clearChat')}</span>
             </button>
           )}
 
@@ -115,11 +103,11 @@ export default function ChatWindow({
             type="button"
             className="header-action-btn"
             onClick={onOpenSettings}
-            title="Engine Settings & Endpoints"
-            aria-label="Engine Settings"
+            title={t('settings')}
+            aria-label={t('settings')}
           >
             <Sliders size={15} />
-            <span className="btn-text">Settings</span>
+            <span className="btn-text">{t('settings')}</span>
           </button>
         </div>
       </header>
@@ -133,10 +121,14 @@ export default function ChatWindow({
         aria-label="Messages list"
       >
         {!hasMessages && !isLoading && !streamingContent ? (
-          <WelcomeScreen
-            onSelectPrompt={onSendMessage}
-            isDemoMode={isDemo}
-          />
+          <WelcomeScreen>
+            <ChatInput
+              onSendMessage={onSendMessage}
+              onStopGeneration={onStopGeneration}
+              isLoading={isLoading}
+              placeholder={t('askPlaceholder')}
+            />
+          </WelcomeScreen>
         ) : (
           <div className="messages-column">
             {messages.map((message, idx) => {
@@ -177,11 +169,11 @@ export default function ChatWindow({
               <div className="message-row assistant-row">
                 <div className="message-container">
                   <div className="message-avatar assistant-avatar" aria-hidden="true">
-                    <Sparkles size={18} />
+                    <img src={acmeLogo} alt="ACME" className="bot-avatar-logo" />
                   </div>
                   <div className="message-content-wrapper">
                     <div className="message-bubble assistant-bubble loading-bubble">
-                      <LoadingIndicator text="Generating response..." />
+                      <LoadingIndicator text={t('generatingResponse')} />
                     </div>
                   </div>
                 </div>
@@ -209,14 +201,17 @@ export default function ChatWindow({
         )}
       </div>
 
-      {/* Composer Input Bar */}
-      <div className="chat-composer-section">
-        <ChatInput
-          onSendMessage={onSendMessage}
-          onStopGeneration={onStopGeneration}
-          isLoading={isLoading}
-        />
-      </div>
+      {/* Composer Input Bar (only shown when conversation is active or loading) */}
+      {(hasMessages || isLoading || streamingContent) && (
+        <div className="chat-composer-section">
+          <ChatInput
+            onSendMessage={onSendMessage}
+            onStopGeneration={onStopGeneration}
+            isLoading={isLoading}
+            placeholder={t('askPlaceholder')}
+          />
+        </div>
+      )}
     </main>
   );
 }

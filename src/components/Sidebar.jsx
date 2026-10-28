@@ -7,12 +7,11 @@ import {
   Edit2,
   Check,
   X,
-  Sliders,
-  PanelLeftClose,
-  Sparkles
+  PanelLeftClose
 } from 'lucide-react';
 import { groupConversationsByDate } from '../utils/chatHelpers.js';
 import ThemeToggle from './ThemeToggle.jsx';
+import { useLanguage } from '../context/LanguageContext.jsx';
 
 export default function Sidebar({
   conversations = [],
@@ -29,11 +28,11 @@ export default function Sidebar({
   onOpenSettings,
   isDemoMode = true,
 }) {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [editingChatId, setEditingChatId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   // Filter conversations by search query
   const filteredConversations = useMemo(() => {
@@ -99,41 +98,25 @@ export default function Sidebar({
       )}
 
       <aside className={`app-sidebar ${isOpen ? 'sidebar-open' : 'sidebar-closed'}`} aria-label="Conversation history">
-        {/* Sidebar Header */}
-        <div className="sidebar-header">
-          <div className="sidebar-brand">
-            <div className="brand-icon-box">
-              <Sparkles size={18} className="brand-icon" />
-            </div>
-            <div className="brand-text">
-              <span className="brand-name">ACME AI Assistant</span>
-              <span className="brand-status">
-                {isDemoMode ? 'Demo Mode' : 'Engine Ready'}
-              </span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            className="sidebar-close-btn"
-            onClick={onToggleSidebar}
-            aria-label="Collapse sidebar"
-            title="Collapse sidebar"
-          >
-            <PanelLeftClose size={18} />
-          </button>
-        </div>
-
-        {/* New Chat Button */}
+        {/* Top Action Row: New Chat & Sidebar Collapse */}
         <div className="sidebar-action-row">
           <button
             type="button"
             className="new-chat-btn"
             onClick={onNewChat}
-            aria-label="Create a new conversation"
+            aria-label={t('newChat')}
           >
             <Plus size={16} />
-            <span>New Chat</span>
+            <span>{t('newChat')}</span>
+          </button>
+          <button
+            type="button"
+            className="sidebar-close-btn"
+            onClick={onToggleSidebar}
+            aria-label={t('collapseSidebar')}
+            title={t('collapseSidebar')}
+          >
+            <PanelLeftClose size={18} />
           </button>
         </div>
 
@@ -144,9 +127,9 @@ export default function Sidebar({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search conversations..."
+            placeholder={t('searchPlaceholder')}
             className="search-input"
-            aria-label="Search conversation history"
+            aria-label={t('searchPlaceholder')}
           />
           {searchQuery && (
             <button
@@ -165,13 +148,13 @@ export default function Sidebar({
           {conversations.length === 0 ? (
             <div className="history-empty-state">
               <MessageSquare size={28} className="empty-icon" />
-              <p className="empty-title">No conversations yet</p>
-              <p className="empty-desc">Your chat history will appear here once you send a message.</p>
+              <p className="empty-title">{t('noConversations')}</p>
+              <p className="empty-desc">{t('noConversationsDesc')}</p>
             </div>
           ) : filteredConversations.length === 0 ? (
             <div className="history-empty-state">
               <Search size={24} className="empty-icon" />
-              <p className="empty-title">No matches found</p>
+              <p className="empty-title">{t('noMatches')}</p>
               <p className="empty-desc">No chats match "{searchQuery}".</p>
             </div>
           ) : (
@@ -291,55 +274,6 @@ export default function Sidebar({
 
         {/* Sidebar Footer */}
         <div className="sidebar-footer">
-          {conversations.length > 0 && (
-            <div className="sidebar-footer-row">
-              {showClearConfirm ? (
-                <div className="clear-confirm-bar">
-                  <span>Clear all chats?</span>
-                  <button
-                    type="button"
-                    className="clear-confirm-yes"
-                    onClick={() => {
-                      onClearAllChats();
-                      setShowClearConfirm(false);
-                    }}
-                  >
-                    Yes, clear
-                  </button>
-                  <button
-                    type="button"
-                    className="clear-confirm-no"
-                    onClick={() => setShowClearConfirm(false)}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className="sidebar-footer-btn danger"
-                  onClick={() => setShowClearConfirm(true)}
-                  aria-label="Clear all conversations"
-                >
-                  <Trash2 size={14} />
-                  <span>Clear all conversations</span>
-                </button>
-              )}
-            </div>
-          )}
-
-          <div className="sidebar-footer-row">
-            <button
-              type="button"
-              className="sidebar-footer-btn"
-              onClick={onOpenSettings}
-              aria-label="Engine Settings"
-            >
-              <Sliders size={14} />
-              <span>Engine Settings</span>
-            </button>
-          </div>
-
           <div className="sidebar-footer-row">
             <ThemeToggle theme={theme} onToggle={onToggleTheme} />
           </div>

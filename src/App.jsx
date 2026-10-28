@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage.jsx';
 import ChatPage from './pages/ChatPage.jsx';
 import { useAuthSession } from './utils/auth.js';
 import { loadTheme, saveTheme } from './utils/storage.js';
+import { LanguageProvider } from './context/LanguageContext.jsx';
 
 /**
  * Lightweight Demo Navigation Guard:
@@ -45,42 +46,44 @@ export default function App() {
   };
 
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Login Route (Public) */}
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <LoginPage theme={theme} onToggleTheme={toggleTheme} />
-            </PublicRoute>
-          }
-        />
+    <LanguageProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Login Route (Public) */}
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <LoginPage theme={theme} onToggleTheme={toggleTheme} />
+              </PublicRoute>
+            }
+          />
 
-        {/* Dedicated Chat Route (Protected by Demo Guard) */}
-        <Route
-          path="/chat"
-          element={
-            <ProtectedRoute>
-              <ChatPage theme={theme} onToggleTheme={toggleTheme} />
-            </ProtectedRoute>
-          }
-        />
+          {/* Dedicated Chat Route (Protected by Demo Guard) */}
+          <Route
+            path="/chat"
+            element={
+              <ProtectedRoute>
+                <ChatPage theme={theme} onToggleTheme={toggleTheme} />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Root Route: Initial entry point */}
-        <Route
-          path="/"
-          element={
-            user ? <Navigate to="/chat" replace /> : <Navigate to="/login" replace />
-          }
-        />
+          {/* Root Route: Initial entry point */}
+          <Route
+            path="/"
+            element={
+              user ? <Navigate to="/chat" replace /> : <Navigate to="/login" replace />
+            }
+          />
 
-        {/* Catch-all Fallback */}
-        <Route
-          path="*"
-          element={<Navigate to={user ? "/chat" : "/login"} replace />}
-        />
-      </Routes>
-    </BrowserRouter>
+          {/* Catch-all Fallback */}
+          <Route
+            path="*"
+            element={<Navigate to={user ? "/chat" : "/login"} replace />}
+          />
+        </Routes>
+      </BrowserRouter>
+    </LanguageProvider>
   );
 }

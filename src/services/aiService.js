@@ -344,7 +344,13 @@ async function sendToRealEngine({ messages, signal, onChunk, config }) {
             try {
               const parsed = JSON.parse(dataStr);
               // Extract delta chunk
-              const delta = parsed.choices?.[0]?.delta?.content ?? (parsed.choices?.[0]?.delta?.reasoning || parsed.response || parsed.message?.content || '');
+              const delta = (parsed.choices?.[0]?.delta?.content) ||
+                (parsed.choices?.[0]?.delta?.reasoning_content) ||
+                (parsed.choices?.[0]?.delta?.reasoning) ||
+                (parsed.choices?.[0]?.text) ||
+                parsed.response ||
+                parsed.message?.content ||
+                '';
               if (delta) {
                 accumulated += delta;
                 onChunk(accumulated);

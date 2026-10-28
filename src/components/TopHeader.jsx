@@ -2,10 +2,12 @@ import { ShieldCheck, UserX, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import acmeLogo from '../assets/ACME-Logo-SVG.png';
 import { useAuthSession, clearAuthSession } from '../utils/auth.js';
+import { useLanguage } from '../context/LanguageContext.jsx';
 
 export default function TopHeader() {
   const user = useAuthSession();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleSignOut = () => {
     clearAuthSession();
@@ -29,7 +31,6 @@ export default function TopHeader() {
         </div>
         <div className="top-header-title-group">
           <h1 className="top-header-app-title">ACME AI Assistant</h1>
-          <span className="top-header-app-badge">Local Engine</span>
         </div>
       </div>
 
@@ -55,11 +56,11 @@ export default function TopHeader() {
               type="button"
               className="top-header-logout-btn"
               onClick={handleSignOut}
-              title="Sign Out"
-              aria-label="Sign out of ACME AI Assistant"
+              title={t('signOut')}
+              aria-label={t('signOut')}
             >
               <LogOut size={13} />
-              <span>Sign Out</span>
+              <span>{t('signOut')}</span>
             </button>
           </div>
         ) : (
@@ -67,11 +68,11 @@ export default function TopHeader() {
             type="button"
             className="top-header-guest-badge top-header-signin-btn"
             onClick={handleSignIn}
-            title="Click to sign in"
-            aria-label="Sign in"
+            title={t('signIn')}
+            aria-label={t('signIn')}
           >
             <UserX size={14} className="guest-icon" />
-            <span className="guest-label">Sign In</span>
+            <span className="guest-label">{t('signIn')}</span>
           </button>
         )}
       </div>
