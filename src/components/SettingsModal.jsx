@@ -267,11 +267,11 @@ export default function SettingsModal({
                 type="text"
                 value={endpoint}
                 onChange={(e) => setEndpoint(e.target.value)}
-                placeholder={engineConfig.baseUrl || 'e.g. https://api.groq.com/openai/v1 or http://localhost:8000'}
+                placeholder={engineConfig.baseUrl || 'http://localhost:5181'}
                 className="form-input"
               />
               <span className="form-hint">
-                Default: <code>{engineConfig.baseUrl || 'Not configured in .env'}</code>
+                Default: <code>{engineConfig.baseUrl || 'http://localhost:5181'}</code>
               </span>
             </div>
 
