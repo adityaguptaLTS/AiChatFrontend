@@ -4,8 +4,8 @@
  * Communicates with the Express backend service:
  * - Base URL: configurable via VITE_API_BASE_URL (defaults to http://localhost:5181)
  * - Chat endpoint: POST /api/chat
- * - Request payload: { "message": "user's message" }
- * - Success response: { "success": true, "data": { "reply": "AI response", "model": "gpt-oss-20b" } }
+ * - Request payload: { "messages": [...] } or { "message": "user prompt" }
+ * - Success response: { "success": true, "data": { "reply": "AI response", "model": "qwen2.5:1.5b" } }
  * - Error response: { "success": false, "error": { "code": "AI_SERVICE_UNAVAILABLE", "message": "error details" } }
  */
 
@@ -24,7 +24,7 @@ const ENV_API_BASE_URL = (
  */
 export function getEngineConfig(runtimeOverrides = {}) {
   const baseUrl = (runtimeOverrides.customEndpoint?.trim() || ENV_API_BASE_URL).replace(/\/+$/, '');
-  const modelName = (runtimeOverrides.customModel?.trim() || 'gpt-oss-20b').trim();
+  const modelName = (runtimeOverrides.customModel?.trim() || 'qwen2.5:1.5b').trim();
 
   return {
     baseUrl: baseUrl || DEFAULT_API_BASE_URL,
@@ -77,7 +77,7 @@ export function mapResponsePayload(data) {
 }
 
 /**
- * Sends the user's message to the Express backend chat endpoint:
+ * Sends conversation messages or direct user message to Express backend chat endpoint:
  * POST http://localhost:5181/api/chat
  *
  * @param {Object} params
@@ -95,17 +95,30 @@ export async function sendMessageToEngine({
   onChunk,
   runtimeOverrides = {},
 }) {
-  // Extract user message from direct parameter or last user role in messages history
+  // Construct multi-turn messages payload if array provided, otherwise fall back to single message
+  let payloadBody = null;
   let userMessageText = '';
-  if (typeof message === 'string' && message.trim()) {
-    userMessageText = message.trim();
-  } else if (Array.isArray(messages) && messages.length > 0) {
-    const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
-    userMessageText = lastUserMessage?.content?.trim() || '';
-  }
 
-  // Prevent sending empty messages
-  if (!userMessageText) {
+  if (Array.isArray(messages) && messages.length > 0) {
+    // Filter and sanitize conversation messages (ignore error messages)
+    const sanitizedMessages = messages
+      .filter(m => m && !m.isError && typeof m.content === 'string' && m.content.trim())
+      .map(m => ({
+        role: m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'),
+        content: m.content
+      }));
+
+    if (sanitizedMessages.length === 0) {
+      throw new Error('Message cannot be empty.');
+    }
+
+    const lastUser = [...sanitizedMessages].reverse().find(m => m.role === 'user');
+    userMessageText = lastUser?.content || '';
+    payloadBody = { messages: sanitizedMessages, message: userMessageText };
+  } else if (typeof message === 'string' && message.trim()) {
+    userMessageText = message.trim();
+    payloadBody = { message: userMessageText };
+  } else {
     throw new Error('Message cannot be empty.');
   }
 
@@ -120,7 +133,7 @@ export async function sendMessageToEngine({
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ message: userMessageText }),
+      body: JSON.stringify(payloadBody),
       signal,
     });
   } catch (fetchErr) {
@@ -173,7 +186,7 @@ export async function sendMessageToEngine({
   }
 
   const reply = responseData.data.reply;
-  const model = responseData.data.model || config.modelName || 'gpt-oss-20b';
+  const model = responseData.data.model || config.modelName || 'qwen2.5:1.5b';
 
   // Update UI with the final reply
   if (typeof onChunk === 'function') {
