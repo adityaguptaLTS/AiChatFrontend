@@ -9,8 +9,10 @@
  * - Error response: { "success": false, "error": { "code": "AI_SERVICE_UNAVAILABLE", "message": "error details" } }
  */
 
-// Local default backend URL
+// Local default backend URL and timeout
 export const DEFAULT_API_BASE_URL = 'http://localhost:5181';
+export const DEFAULT_CLIENT_TIMEOUT_MS = 120000; // 120 seconds client timeout for local LLM inference
+export const MAX_MESSAGE_CHAR_LENGTH = 32000;
 
 // Read backend URL from Vite environment variable with local default fallback
 const ENV_API_BASE_URL = (
@@ -19,12 +21,17 @@ const ENV_API_BASE_URL = (
   DEFAULT_API_BASE_URL
 ).trim();
 
+const ENV_MODEL_NAME = (
+  import.meta.env.VITE_AI_MODEL_NAME ||
+  'llama3.2:3b'
+).trim();
+
 /**
  * Returns effective engine/backend configuration factoring in runtime overrides (e.g., from settings modal).
  */
 export function getEngineConfig(runtimeOverrides = {}) {
   const baseUrl = (runtimeOverrides.customEndpoint?.trim() || ENV_API_BASE_URL).replace(/\/+$/, '');
-  const modelName = (runtimeOverrides.customModel?.trim() || 'qwen2.5:1.5b').trim();
+  const modelName = (runtimeOverrides.customModel?.trim() || ENV_MODEL_NAME).trim();
 
   return {
     baseUrl: baseUrl || DEFAULT_API_BASE_URL,
@@ -61,7 +68,7 @@ export function mapRequestPayload(messages) {
   if (Array.isArray(messages) && messages.length > 0) {
     const lastUserMessage = [...messages].reverse().find(m => m.role === 'user');
     return {
-      message: lastUserMessage?.content || ''
+      message: (lastUserMessage?.content || '').slice(0, MAX_MESSAGE_CHAR_LENGTH)
     };
   }
   return { message: '' };
@@ -80,10 +87,21 @@ export function mapResponsePayload(data) {
  * Sends conversation messages or direct user message to Express backend chat endpoint:
  * POST http://localhost:5181/api/chat
  *
+ * Spec:
+ * - Base URL / Port: http://localhost:5181
+ * - Endpoint: /api/chat
+ * - Request Payload: Option A: { messages: [...] } or Option B: { message: "..." }
+ * - Roles supported: "system", "user", "assistant"
+ * - The final message in messages must be a non-empty user message
+ * - Max string size per message: 32,000 characters
+ * - Client timeout: 120s
+ * - Response text mapping: response.data.reply
+ *
  * @param {Object} params
  * @param {Array} [params.messages] - Conversation history array [{ role, content }]
  * @param {string} [params.message] - Direct user message text
- * @param {AbortSignal} [params.signal] - Signal for request cancellation
+ * @param {AbortSignal} [params.signal] - Signal for user-initiated request cancellation
+ * @param {number} [params.timeoutMs] - Optional custom timeout (defaults to 120000ms)
  * @param {Function} [params.onChunk] - Callback for UI update
  * @param {Object} [params.runtimeOverrides] - Optional settings overrides
  * @returns {Promise<{ content: string, reply: string, model: string, isDemo: boolean }>}
@@ -92,32 +110,47 @@ export async function sendMessageToEngine({
   messages,
   message,
   signal,
+  timeoutMs = DEFAULT_CLIENT_TIMEOUT_MS,
   onChunk,
   runtimeOverrides = {},
 }) {
-  // Construct multi-turn messages payload if array provided, otherwise fall back to single message
   let payloadBody = null;
-  let userMessageText = '';
 
   if (Array.isArray(messages) && messages.length > 0) {
     // Filter and sanitize conversation messages (ignore error messages)
     const sanitizedMessages = messages
       .filter(m => m && !m.isError && typeof m.content === 'string' && m.content.trim())
-      .map(m => ({
-        role: m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'),
-        content: m.content
-      }));
+      .map(m => {
+        const validRole = m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user');
+        // Enforce maximum string size per message: 32,000 characters
+        const trimmedContent = m.content.slice(0, MAX_MESSAGE_CHAR_LENGTH);
+        return {
+          role: validRole,
+          content: trimmedContent,
+        };
+      });
 
     if (sanitizedMessages.length === 0) {
       throw new Error('Message cannot be empty.');
     }
 
-    const lastUser = [...sanitizedMessages].reverse().find(m => m.role === 'user');
-    userMessageText = lastUser?.content || '';
-    payloadBody = { messages: sanitizedMessages, message: userMessageText };
+    // Spec: The final message in the messages array must be a non-empty user message
+    const lastMsg = sanitizedMessages[sanitizedMessages.length - 1];
+    if (lastMsg.role !== 'user' || !lastMsg.content.trim()) {
+      // Find the last user message or ensure the last entry is a user message
+      const lastUser = [...sanitizedMessages].reverse().find(m => m.role === 'user' && m.content.trim());
+      if (!lastUser) {
+        throw new Error('The conversation history must end with a non-empty user message.');
+      }
+      sanitizedMessages.push({ role: 'user', content: lastUser.content });
+    }
+
+    // Option A: Send clean messages array
+    payloadBody = { messages: sanitizedMessages };
   } else if (typeof message === 'string' && message.trim()) {
-    userMessageText = message.trim();
-    payloadBody = { message: userMessageText };
+    // Option B: Single Message
+    const trimmedMessage = message.trim().slice(0, MAX_MESSAGE_CHAR_LENGTH);
+    payloadBody = { message: trimmedMessage };
   } else {
     throw new Error('Message cannot be empty.');
   }
@@ -125,6 +158,27 @@ export async function sendMessageToEngine({
   const config = getEngineConfig(runtimeOverrides);
   const baseUrl = (config.baseUrl || DEFAULT_API_BASE_URL).replace(/\/+$/, '');
   const endpointUrl = getEndpointUrl(runtimeOverrides);
+
+  // Setup 120s timeout controller linked with optional external user abort signal
+  const timeoutController = new AbortController();
+  let timedOut = false;
+  const timeoutId = setTimeout(() => {
+    timedOut = true;
+    timeoutController.abort();
+  }, timeoutMs);
+
+  const abortListener = () => {
+    timeoutController.abort();
+  };
+
+  if (signal) {
+    if (signal.aborted) {
+      clearTimeout(timeoutId);
+      timeoutController.abort();
+    } else {
+      signal.addEventListener('abort', abortListener, { once: true });
+    }
+  }
 
   let response;
   try {
@@ -134,16 +188,27 @@ export async function sendMessageToEngine({
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payloadBody),
-      signal,
+      signal: timeoutController.signal,
     });
   } catch (fetchErr) {
-    if (fetchErr.name === 'AbortError') {
+    clearTimeout(timeoutId);
+    if (signal) signal.removeEventListener('abort', abortListener);
+
+    if (timedOut) {
+      throw new Error(
+        `Request timed out after ${Math.round(timeoutMs / 1000)} seconds. Local LLM inference may be taking longer due to server load or prompt length. Please try again.`
+      );
+    }
+    if (signal?.aborted) {
       throw fetchErr;
     }
     // Network failures, connection refused, or CORS errors
     throw new Error(
       `Unable to connect to the backend server at ${baseUrl}. Please ensure the Express backend is running on port 5181.`
     );
+  } finally {
+    clearTimeout(timeoutId);
+    if (signal) signal.removeEventListener('abort', abortListener);
   }
 
   let responseData = null;
@@ -186,7 +251,7 @@ export async function sendMessageToEngine({
   }
 
   const reply = responseData.data.reply;
-  const model = responseData.data.model || config.modelName || 'qwen2.5:1.5b';
+  const model = responseData.data.model || config.modelName || 'llama3.2:3b';
 
   // Update UI with the final reply
   if (typeof onChunk === 'function') {
